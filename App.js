@@ -14,15 +14,29 @@ connection.connect((err) => {
 
 app.use(express.json());
 
+
 app.get('/api/movies', (req, res) => {
-  connection.query('SELECT * FROM movies', (err, result) => {
+  let sql = 'SELECT * FROM movies';
+  const sqlValues1 = [];
+
+  if (req.query.color) {
+    sql += ' WHERE color = ?';
+    sqlValues1.push(req.query.color);
+  } else if (req.query.max_duration) {
+    sql += ' WHERE max_duration = ?';
+    sqlValues1.push(req.query.max_duration);
+  }
+  
+  connection.query(sql, sqlValues1, (err, result) => {
     if (err) {
       res.status(500).send('Error retrieving data from database');
     } else {
       res.json(result);
+      res.status(200).send('Query results found');
     }
   });
 });
+
 
 app.get('/api/users', (req, res) => {
   let sql = 'SELECT * FROM users';
@@ -40,6 +54,7 @@ app.get('/api/users', (req, res) => {
   });
 });
 
+
 app.get('/api/users/:id', (req, res) => {
   const userId = req.params.id;
   connection.query(
@@ -49,12 +64,16 @@ app.get('/api/users/:id', (req, res) => {
       if (err) {
         res.status(500).send('Error retrieving user from database');
       } else {
-        if (results.length) res.json(results[0]);
-        else res.status(404).send('User not found');
+        if (results.length) {
+          res.json(results[0]);
+          res.status(200).send('User found');
+        } else 
+          res.status(404).send('User not found');
       }
     }
   );
 });
+
 
 app.post('/api/movies', (req, res) => {
   const { title, director, year, color, duration } = req.body;
@@ -65,11 +84,12 @@ app.post('/api/movies', (req, res) => {
       if (err) {
         res.status(500).send('Error saving the movie');
       } else {
-        res.status(201).send('Movie successfully saved');
+        res.status(200).send('Movie successfully saved');
       }
     }
   );
 });
+
 
 app.post('/api/users', (req, res) => {
   const { firstname, lastname, email } = req.body;
@@ -81,11 +101,12 @@ app.post('/api/users', (req, res) => {
         console.error(err);
         res.status(500).send('Error saving the user');
       } else {
-        res.status(201).send('User successfully saved');
+        res.status(200).send('User successfully saved');
       }
     }
   );
 });
+
 
 app.put('/api/users/:id', (req, res) => {
   const userId = req.params.id;
@@ -104,6 +125,7 @@ app.put('/api/users/:id', (req, res) => {
   );
 });
 
+
 app.put('/api/movies/:id', (req, res) => {
   const movieId = req.params.id;
   const moviePropsToUpdate = req.body;
@@ -121,6 +143,7 @@ app.put('/api/movies/:id', (req, res) => {
   );
 });
 
+
 app.delete('/api/users/:id', (req, res) => {
   connection.query(
     'DELETE FROM users WHERE id = ?',
@@ -136,6 +159,7 @@ app.delete('/api/users/:id', (req, res) => {
     }
   );
 });
+
 
 app.delete('/api/movies/:id', (req, res) => {
   const movieId = req.params.id;
@@ -153,6 +177,7 @@ app.delete('/api/movies/:id', (req, res) => {
     }
   );
 });
+
 
 app.listen(port, () => {
   console.log(`Server listening on port ${port}`);
